@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>随机燃烧带火焰粒子效果</title>
+<title>随机燃烧带火焰粒子加速效果</title>
 <style>
   body {
     margin: 0; padding: 40px 20px 100px;
@@ -280,6 +280,10 @@
     }
 
     let burningIndex = 0;
+    let baseDelay = 400; // 初始燃烧间隔（毫秒）
+    let minDelay = 50;  // 最短燃烧间隔
+    let acceleration = 0.95; // 每次燃烧后乘的加速系数（越小越快）
+
     function burnNext(){
       if(burningIndex >= toBurn.length){
         setTimeout(() => {
@@ -296,15 +300,12 @@
       const span = toBurn[burningIndex];
       burningIndex++;
 
-      // 计算span在页面上的位置
       const rect = span.getBoundingClientRect();
-      // 生成几个火焰粒子
       for(let i=0; i<4; i++){
         createParticle(rect.left + rect.width/2, rect.top + rect.height/2);
       }
       if(particles.length > 0) animateParticles();
 
-      // 字符燃烧动画
       let opacity = 1;
       let brightness = 1;
       let saturate = 1;
@@ -330,7 +331,8 @@
 
         if(opacity <= 0){
           span.style.display = 'none';
-          setTimeout(burnNext, 150 + Math.random()*200);
+          baseDelay = Math.max(minDelay, baseDelay * acceleration);
+          setTimeout(burnNext, baseDelay);
         } else {
           requestAnimationFrame(animate);
         }
@@ -345,3 +347,4 @@
 
 </body>
 </html>
+
