@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>遗忘图书馆 | The Library of Letting Go</title>
+<style>
+  :root {
+    --bg-color: #1c1c1c;
+    --text-color: #f0e6d2;
+    --textarea-bg: #2b2b2b;
+    --button-bg: #ff5722;
+    --button-hover: #e04e1f;
+  }
+  body {
+    margin:0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    padding: 60px 20px 100px;
+    transition: background 0.6s, color 0.6s;
+  }
+  h1 {
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  textarea {
+    width: 90%;
+    max-width: 600px;
+    height: 180px;
+    padding: 15px;
+    font-size: 16px;
+    background: var(--textarea-bg);
+    color: var(--text-color);
+    border: none;
+    resize: none;
+    transition: background 0.5s, color 0.5s;
+  }
+  button {
+    margin: 15px 10px 0 0;
+    background: var(--button-bg);
+    color: white;
+    padding: 10px 22px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: var(--button-hover);
+  }
+  #futureMessage {
+    margin-top: 25px;
+    font-size: 16px;
+    color: #aaa;
+    white-space: pre-wrap;
+    max-width: 600px;
+    text-align: center;
+  }
+  #burnContainer p {
+    margin: 4px 0;
+    opacity: 1;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  }
+  #burnContainer p.burned {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  #philosophy {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: #999;
+    font-style: italic;
+    user-select: none;
+    pointer-events: none;
+    height: 20px;
+    line-height: 20px;
+  }
+  #themeToggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--button-bg);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+    line-height: 38px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  #themeToggle:hover {
+    background: var(--button-hover);
+  }
+  /* Dream Theme */
+  body.dream {
+    --bg-color: #0b0f1a;
+    --text-color: #a0c0f0;
+    --textarea-bg: #15203b;
+    --button-bg: #3a80ff;
+    --button-hover: #2a62cc;
+  }
+  /* Canvas full screen */
+  #ashCanvas {
+    position: fixed;
+    top:0; left:0; width:100vw; height:100vh;
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+
+<h1>写下你想被遗忘的事</h1>
+<textarea id="confession" placeholder="在这里写下……"></textarea>
+<div>
+  <button id="burnBtn" title="烧掉它">🔥 烧掉它</button>
+  <button id="saveFutureBtn" title="写给未来">💌 写给未来</button>
+</div>
+<div id="futureMessage"></div>
+<div id="burnContainer"></div>
+<div id="philosophy"></div>
+<div id="themeToggle" title="切换梦境模式">🌙</div>
+<canvas id="ashCanvas"></canvas>
+
+<script>
+(() => {
+  const area = document.getElementById('confession');
+  const burnBtn = document.getElementById('burnBtn');
+  const saveFutureBtn = document.getElementById('saveFutureBtn');
+  const futureDiv = document.getElementById('futureMessage');
+  const burnContainer = document.getElementById('burnContainer');
+  const philosophy = document.getElementById('philosophy');
+  const themeToggle = document.getElementById('themeToggle');
+  const ashCanvas = document.getElementById('ashCanvas');
+  const ctx = ashCanvas.getContext('2d');
+  
+  // 自动消失计时（30秒）
+  let autoTimer = null;
+
+  // 哲思语录
+  const quotes = [
+    "失去未必是损耗，放下也可能是成全。",
+    "每一次焚烧，都是新的开始。",
+    "轻轻放下，是给自己最大的慈悲。",
+    "记忆如灰烬，终会随风远去。",
+    "痛苦不会永远停留，正如火焰终将熄灭。",
+    "遗忘是一种温柔的解脱。",
+    "允许自己放下，才能看见更远的风景。",
+    "过去不再重来，未来从此展开。"
+  ];
+  let quoteIndex = 0;
+
+  // 哲思轮播
+  function showNextQuote(){
+    philosophy.style.opacity = 0;
+    setTimeout(() => {
+      philosophy.textContent = quotes[quoteIndex];
+      philosophy.style.opacity = 1;
+      quoteIndex = (quoteIndex +1) % quotes.length;
+    }, 1000);
+  }
+  showNextQuote();
+  setInterval(showNextQuote, 15000);
+
+  // 恢复未来留言（sessionStorage，一次性）
+  window.onload = () => {
+    ashCanvas.width = window.innerWidth;
+    ashCanvas.height = window.innerHeight;
+    // 恢复未来留言
+    const msg = sessionStorage.getItem('future');
+    if (msg) {
+      futureDiv.innerText = "📬 来自过去的你写道：\n" + msg;
+      sessionStorage.removeItem('future');
+    }
+    resetAutoTimer();
+    drawAsh(); // 启动灰烬动画
+  };
+  window.onresize = () => {
+    ashCanvas.width = window.innerWidth;
+    ashCanvas.height = window.innerHeight;
+  };
+
+  // 自动烧毁
+  function autoBurn() {
+    if (area.value.trim() !== '') {
+      burnText();
+    }
+  }
+
+  // 焚烧动画
+  function burnText() {
+    if (area.style.display === 'none') return; // 避免多次触发
+    clearTimeout(autoTimer);
+    burnBtn.disabled = true;
+    saveFutureBtn.disabled = true;
+    area.disabled = true;
+
+    const lines = area.value.trim().split('\n');
+    area.style.display = 'none';
+    burnContainer.innerHTML = '';
+
+    // 创建行元素
+    lines.forEach(line => {
+      const p = document.createElement('p');
+      p.textContent = line;
+      burnContainer.appendChild(p);
+    });
+
+    // 一行行燃烧
+    const paragraphs = burnContainer.querySelectorAll('p');
+    paragraphs.forEach((p,i) => {
+      setTimeout(() => {
+        p.classList.add('burned');
+        if(i === paragraphs.length -1){
+          // 焚烧完毕
+          setTimeout(() => {
+            burnContainer.innerHTML = '';
+            futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
+            burnBtn.disabled = false;
+            saveFutureBtn.disabled = false;
+            area.value = '';
+            area.style.display = 'block';
+            area.disabled = false;
+            resetAutoTimer();
+          }, 1200);
+        }
+      }, i * 300);
+    });
+  }
+
+  // 输入时重置计时
+  area.addEventListener('input', resetAutoTimer);
+  function resetAutoTimer(){
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(autoBurn, 30000);
+  }
+
+  // 保存未来留言（一次性，sessionStorage）
+  saveFutureBtn.onclick = () => {
+    const msg = prompt("写一句话给未来的自己：");
+    if (msg && msg.trim()) {
+      sessionStorage.setItem('future', msg.trim());
+      alert("✅ 已保存给未来的你。刷新或关闭页面后才会看到。");
+    }
+  };
+
+  // 点击烧毁
+  burnBtn.onclick = burnText;
+
+  // === 灰烬粒子动画实现 ===
+  const ashes = [];
+  class Ash {
+    constructor() {
+      this.x = Math.random() * ashCanvas.width;
+      this.y = ashCanvas.height + 10 + Math.random()*50;
+      this.vx = (Math.random()-0.5)*0.4;
+      this.vy = - (1 + Math.random()*1);
+      this.size = 1 + Math.random()*2;
+      this.alpha = 1;
+      this.life = 0;
+      this.maxLife = 60 + Math.random()*40;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.life++;
+      this.alpha = 1 - this.life / this.maxLife;
+      if (this.alpha < 0) this.alpha = 0;
+    }
+    draw(ctx) {
+      ctx.fillStyle = `rgba(200,200,200,${this.alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(this.x, this.y, this.size, this.size*0.4, 0, 0, 2*Math.PI);
+      ctx.fill();
+    }
+  }
+  function drawAsh() {
+    ctx.clearRect(0, 0, ashCanvas.width, ashCanvas.height);
+
+    // 新增灰烬概率
+    if (Math.random() < 0.3) {
+      ashes.push(new Ash());
+    }
+
+    for(let i = ashes.length -1; i >= 0; i--) {
+      ashes[i].update();
+      ashes[i].draw(ctx);
+      if (ashes[i].alpha <= 0) ashes.splice(i, 1);
+    }
+
+    requestAnimationFrame(drawAsh);
+  }
+
+  // === 主题切换 ===
+  let isDream = false;
+  themeToggle.onclick = () => {
+    isDream = !isDream;
+    if (isDream) {
+      document.body.classList.add('dream');
+      themeToggle.textContent = '☀️';
+      philosophy.textContent = "进入梦境模式，愿你安然入睡。";
+    } else {
+      document.body.classList.remove('dream');
+      themeToggle.textContent = '🌙';
+      showNextQuote();
+    }
+  };
+
+})();
+</script>
+
+</body>
+</html>
