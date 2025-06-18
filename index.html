@@ -2,225 +2,205 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>皱巴纸燃烧文字</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>遗忘图书馆</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: #f9f5eb;
-      font-family: "Segoe UI", sans-serif;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background: repeating-radial-gradient(circle at center, #f9f5eb 0, #e8e1cd 1px, #f9f5eb 2px);
-      filter: url(#noise);
-      z-index: -1;
-    }
-
-    .centered {
+      background: url('https://www.transparenttextures.com/patterns/paper-fibers.png') repeat #f7f2e8;
+      font-family: "Georgia", serif;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-top: 40px;
+      overflow: hidden;
     }
 
-    h2 {
-      font-size: 28px;
+    h1 {
+      font-size: 3em;
+      color: #4a3628;
       margin-bottom: 20px;
-      color: #333;
     }
 
     textarea {
       width: 90%;
       max-width: 600px;
-      height: 120px;
-      font-size: 24px;
-      padding: 10px;
-      border: 1px solid #aaa;
-      border-radius: 6px;
+      height: 140px;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      background: #fffaf3 url('https://www.transparenttextures.com/patterns/crissxcross.png');
+      font-size: 18px;
+      color: #333;
       resize: vertical;
-      background: #fffefb;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 15px rgba(255, 100, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4);
+      animation: flicker 1.5s infinite alternate;
+      border-left: 4px solid rgba(255, 80, 0, 0.5);
+      border-right: 4px solid rgba(255, 80, 0, 0.5);
     }
 
-    #burnContainer {
-      text-align: center;
-      margin: 30px auto;
-      font-size: 36px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      min-height: 120px;
-    }
-
-    #burnContainer span {
-      display: inline-block;
-      position: relative;
+    @keyframes flicker {
+      from {
+        box-shadow: 0 0 10px rgba(255, 100, 0, 0.3), 0 0 20px rgba(255, 140, 0, 0.2);
+      }
+      to {
+        box-shadow: 0 0 20px rgba(255, 120, 0, 0.6), 0 0 40px rgba(255, 160, 0, 0.4);
+      }
     }
 
     button {
-      margin: 10px 6px;
-      padding: 10px 18px;
-      font-size: 18px;
+      margin-top: 16px;
+      padding: 12px 24px;
+      font-size: 16px;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      background-color: #a14c2e;
+      color: white;
       cursor: pointer;
-      background-color: #d35400;
-      color: #fff;
+      transition: background-color 0.3s ease;
     }
 
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
+    button:hover {
+      background-color: #bf6144;
     }
 
-    #futureDiv {
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    #output {
+      font-size: 36px;
+      color: #2c1d12;
+      white-space: pre-wrap;
       text-align: center;
-      margin-top: 20px;
-      font-size: 22px;
-      color: #7f4e12;
-      animation: pulse 1.5s infinite;
+      max-width: 80%;
+      line-height: 1.5;
+      margin-top: 40px;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.03); }
-    }
-
-    .particle {
-      position: fixed;
-      pointer-events: none;
-      border-radius: 50%;
-      mix-blend-mode: screen;
-      z-index: 10;
+    #footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 20px;
+      color: #6a4d32;
     }
   </style>
 </head>
 <body>
+  <h1>遗忘图书馆</h1>
+  <textarea id="text" placeholder="输入一段想要焰烧的话..."></textarea>
+  <button onclick="startBurning()">开始烧化</button>
+  <div id="output"></div>
+  <canvas id="fireCanvas"></canvas>
+  <div id="footer">过去从未逝去，它甚至从未过去。</div>
 
-<div class="centered">
-  <h2>皱巴纸文字慢慢烧穿洞</h2>
-  <textarea id="inputArea" placeholder="请输入你想燃烧的文字...">这是一张皱巴的纸，文字慢慢被烧穿...</textarea>
-  <div>
-    <button id="burnBtn">开始燃烧🔥</button>
-    <button id="saveFutureBtn" disabled>保存结果</button>
-  </div>
-</div>
+  <script>
+    const canvas = document.getElementById('fireCanvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+    const textInput = document.getElementById('text');
 
-<div id="burnContainer"></div>
-<div id="futureDiv">🕊️ 它正在慢慢消失……</div>
+    let chars = [];
+    let burnTimer = 0;
+    let particles = [];
 
-<svg width="0" height="0">
-  <filter id="noise" x="0" y="0" width="100%" height="100%">
-    <feTurbulence baseFrequency="0.07" numOctaves="3" stitchTiles="stitch" />
-    <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="10" />
-  </filter>
-</svg>
-
-<script>
-  const area = document.getElementById("inputArea");
-  const burnBtn = document.getElementById("burnBtn");
-  const saveBtn = document.getElementById("saveFutureBtn");
-  const container = document.getElementById("burnContainer");
-  const futureDiv = document.getElementById("futureDiv");
-
-  const particleColors = ["#e25822", "#f39c12", "#d35400", "#ff6f00"];
-  const particles = [];
-
-  function createParticle(x, y) {
-    const p = document.createElement("div");
-    p.className = "particle";
-    const size = Math.random() * 6 + 4;
-    p.style.width = size + "px";
-    p.style.height = size + "px";
-    p.style.left = x + "px";
-    p.style.top = y + "px";
-    p.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
-    p.vx = (Math.random() - 0.5) * 2;
-    p.vy = -Math.random() * 3 - 1;
-    p.life = 40 + Math.random() * 30;
-    p.style.opacity = 1;
-    document.body.appendChild(p);
-    particles.push(p);
-  }
-
-  function animateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.life--;
-      if (p.life <= 0) {
-        p.remove();
-        particles.splice(i, 1);
-        continue;
-      }
-      p.vx *= 0.98;
-      p.vy += 0.1;
-      p.style.left = parseFloat(p.style.left) + p.vx + "px";
-      p.style.top = parseFloat(p.style.top) + p.vy + "px";
-      p.style.opacity = p.life / 60;
-    }
-    if (particles.length > 0) {
-      requestAnimationFrame(animateParticles);
-    }
-  }
-
-  function burnText() {
-    burnBtn.disabled = true;
-    saveBtn.disabled = true;
-    container.innerHTML = "";
-    futureDiv.innerText = "🕊️ 它正在慢慢消失……";
-
-    const text = area.value;
-    if (!text.trim()) return;
-
-    const spans = text.split("").map((char) => {
-      const span = document.createElement("span");
-      span.innerText = char;
-      container.appendChild(span);
-      return span;
-    });
-
-    let i = 0;
-    let delay = 500;
-
-    function burnNext() {
-      if (i >= spans.length) {
-        futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
-        burnBtn.disabled = false;
-        saveBtn.disabled = false;
-        return;
-      }
-      const span = spans[i++];
-      const rect = span.getBoundingClientRect();
-      for (let j = 0; j < 4; j++) {
-        createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      }
-      animateParticles();
-
-      span.style.transition = "opacity 0.7s, filter 0.7s";
-      span.style.opacity = "0";
-      span.style.filter = "blur(2px)";
-      setTimeout(burnNext, delay);
-      delay = Math.max(100, delay * 0.85); // 加速燃烧
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
 
-    burnNext();
-  }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-  burnBtn.onclick = burnText;
+    function startBurning() {
+      output.innerHTML = '';
+      chars = [];
+      const text = textInput.value;
+      if (!text) return;
 
-  saveBtn.onclick = () => {
-    navigator.clipboard.writeText(container.innerText).then(() => {
-      alert("复制成功！");
-    });
-  };
-</script>
+      for (let ch of text) {
+        const span = document.createElement('span');
+        span.textContent = ch;
+        output.appendChild(span);
+        chars.push({ el: span, life: 1, burned: false });
+      }
+      burnTimer = 0;
+      particles = [];
+      requestAnimationFrame(burnLoop);
+    }
 
+    function burnLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      burnTimer++;
+      let progress = Math.min(1, burnTimer / 400);
+
+      for (let i = 0; i < chars.length; i++) {
+        let char = chars[i];
+        if (!char.burned && Math.random() < progress * 0.07) {
+          char.life = 100;
+          char.burned = true;
+        }
+        if (char.life > 0) {
+          char.life--;
+          let rect = char.el.getBoundingClientRect();
+          drawFire(rect.left + rect.width / 2, rect.top + rect.height / 2, char.life);
+          particles.push(createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2));
+          if (char.life === 0) {
+            char.el.style.opacity = '0';
+            char.el.style.textShadow = '0 0 4px rgba(0,0,0,0.2)';
+          }
+        }
+      }
+
+      updateParticles();
+
+      if (chars.some(c => c.life > 0) || particles.length > 0) requestAnimationFrame(burnLoop);
+    }
+
+    function drawFire(x, y, life) {
+      const intensity = Math.max(0, life / 100);
+      const size = 20 + 20 * intensity;
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+      gradient.addColorStop(0, `rgba(255, ${100 + life}, 0, ${intensity})`);
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function createParticle(x, y) {
+      return {
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: -Math.random() * 1.5,
+        alpha: 1.0,
+        radius: Math.random() * 3 + 1
+      };
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = `rgba(255, 150, 0, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  </script>
 </body>
 </html>
