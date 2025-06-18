@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>遗忘图书馆 — 逐字燃烧动画带火光</title>
+<title>遗忘的燃烧 — 皱纸燃烧动画</title>
 <style>
   body {
-    margin:0; padding:40px 20px 100px;
-    background: #1c1c1c;
-    color: #f0e6d2;
+    margin: 0; padding: 40px 20px 100px;
+    background: #f9f0d9; /* 旧纸色 */
+    color: #3a2f1c;
     font-family: 'Courier New', monospace;
     display: flex; flex-direction: column; align-items: center;
     min-height: 100vh;
-    overflow-x: hidden;
     user-select: none;
   }
   h1 {
     margin-bottom: 10px;
+    font-weight: 700;
   }
   textarea {
     width: 90%;
@@ -24,14 +24,21 @@
     height: 180px;
     padding: 15px;
     font-size: 16px;
-    background: #2b2b2b;
-    color: #f0e6d2;
-    border: none;
+    background: #fff8dc;
+    color: #3a2f1c;
+    border: 2px solid #c3b57a;
+    border-radius: 6px;
     resize: none;
+    box-shadow: inset 0 0 8px #d6c67a;
+    transition: box-shadow 0.3s;
+  }
+  textarea:focus {
+    outline: none;
+    box-shadow: inset 0 0 14px #b29e50;
   }
   button {
     margin: 15px 10px 0 0;
-    background: #ff5722;
+    background: #a45c1f;
     color: white;
     padding: 10px 22px;
     font-size: 16px;
@@ -39,62 +46,37 @@
     cursor: pointer;
     border-radius: 6px;
     transition: background 0.3s;
-    position: relative;
+    user-select: none;
   }
-  button:hover {
-    background: #e04e1f;
+  button:hover:not(:disabled) {
+    background: #7d4312;
+  }
+  button:disabled {
+    background: #d2b58b;
+    cursor: default;
   }
   #futureMessage {
     margin-top: 25px;
     font-size: 16px;
-    color: #aaa;
+    color: #7d6f49;
     max-width: 600px;
     text-align: center;
     white-space: pre-wrap;
+    min-height: 44px;
+    user-select: text;
   }
   #burnContainer p {
-    margin: 6px 0;
-    font-size: 18px;
-    font-weight: bold;
+    margin: 12px 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3em;
   }
   #burnContainer p span {
     display: inline-block;
     position: relative;
+    color: #3a2f1c;
+    user-select: none;
   }
-  /* 火光动画 */
-  @keyframes fireGlow {
-    0%, 100% { text-shadow: 
-      0 0 6px #ff5722,
-      0 0 10px #ff7043,
-      0 0 18px #ff8a65,
-      0 0 30px #ffab91; 
-    }
-    50% { text-shadow:
-      0 0 12px #ff7043,
-      0 0 20px #ff5722,
-      0 0 25px #ff8a65,
-      0 0 40px #ffab91;
-    }
-  }
-  /* 燃烧中的字火光 */
-  .burning {
-    animation: fireGlow 1s infinite alternate;
-  }
-  /* 燃烧文字动画 */
-  .burn-char {
-    opacity: 1;
-    filter: blur(0);
-    transform: translate(0,0) rotate(0deg);
-    transition: none;
-  }
-  /* 燃烧消失状态 */
-  .burned {
-    opacity: 0 !important;
-    filter: blur(2px);
-    pointer-events: none;
-    transform: translate(0, 5px) rotate(20deg);
-  }
-
   /* 底部哲思 */
   #philosophy {
     position: fixed;
@@ -102,7 +84,7 @@
     width: 100%;
     text-align: center;
     font-size: 14px;
-    color: #999;
+    color: #7d6f49;
     font-style: italic;
     user-select: none;
     pointer-events: none;
@@ -145,7 +127,6 @@
   ];
   let quoteIndex = 0;
 
-  // 哲思轮播
   function showNextQuote(){
     philosophy.style.opacity = 0;
     setTimeout(() => {
@@ -157,9 +138,8 @@
   showNextQuote();
   setInterval(showNextQuote, 15000);
 
-  // 恢复未来留言（sessionStorage，一次性）
+  // 恢复未来留言（sessionStorage）
   window.onload = () => {
-    // 恢复未来留言
     const msg = sessionStorage.getItem('future');
     if (msg) {
       futureDiv.innerText = "📬 来自过去的你写道：\n" + msg;
@@ -167,7 +147,7 @@
     }
   };
 
-  // 保存未来留言（一次性，sessionStorage）
+  // 保存未来留言（一次性）
   saveFutureBtn.onclick = () => {
     const msg = prompt("写一句话给未来的自己：");
     if (msg && msg.trim()) {
@@ -176,11 +156,12 @@
     }
   };
 
-  // 燃烧动画函数
+  // 皱纸燃烧动画函数
   burnBtn.onclick = () => {
-    if (area.style.display === 'none') return; // 防止重复点
+    if (area.style.display === 'none') return; // 防止多次点
     const text = area.value.trim();
     if (!text) return alert('请输入内容后再烧掉它。');
+
     burnBtn.disabled = true;
     saveFutureBtn.disabled = true;
     area.disabled = true;
@@ -189,13 +170,11 @@
     area.style.display = 'none';
     burnContainer.innerHTML = '';
 
-    // 每行分割成单字符span，添加燃烧初始样式
     lines.forEach(line => {
       const p = document.createElement('p');
       for (const ch of line) {
         const span = document.createElement('span');
         span.textContent = ch;
-        span.classList.add('burn-char');
         p.appendChild(span);
       }
       burnContainer.appendChild(p);
@@ -206,7 +185,6 @@
 
     function burnLine() {
       if (lineIndex >= paragraphs.length) {
-        // 全部烧完
         setTimeout(() => {
           burnContainer.innerHTML = '';
           futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
@@ -215,7 +193,7 @@
           area.value = '';
           area.style.display = 'block';
           area.disabled = false;
-        }, 1000);
+        }, 1500);
         return;
       }
       const spans = paragraphs[lineIndex].querySelectorAll('span');
@@ -224,29 +202,39 @@
       function burnChar() {
         if (charIndex >= spans.length) {
           lineIndex++;
-          setTimeout(burnLine, 400);
+          setTimeout(burnLine, 1000);
           return;
         }
         const span = spans[charIndex];
-        span.classList.add('burning'); // 开始火光动画
+        span.style.transition = 'none';
+
         let opacity = 1;
+        let brightness = 1;
+        let saturate = 1;
+        let skewX = 0;
+        let skewY = 0;
+        let scale = 1;
+        let rotate = 0;
         let frame = 0;
 
         function animate() {
-          opacity -= 0.04;
           frame++;
-          span.style.opacity = opacity;
-          const shakeX = Math.sin(frame * 0.5) * 2 + 'px';
-          const shakeY = Math.cos(frame * 0.3) * 1 + 'px';
-          const rotateDeg = (frame * 5) % 360;
-          const blurPx = (1 - opacity) * 3 + 'px';
-          span.style.transform = `translate(${shakeX},${shakeY}) rotate(${rotateDeg}deg)`;
-          span.style.filter = `blur(${blurPx})`;
+          opacity -= 0.008;           // 慢慢消失，大约125帧燃尽
+          brightness -= 0.006;        // 变暗
+          saturate -= 0.005;          // 褪色
+          skewX = Math.sin(frame * 0.15) * 8;  // 纸张左右皱褶摇摆
+          skewY = Math.cos(frame * 0.1) * 5;   // 上下微波动
+          scale -= 0.0025;            // 缩小
+          rotate += 0.5;              // 缓慢旋转
+
+          span.style.opacity = opacity < 0 ? 0 : opacity;
+          span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
+          span.style.transform = `skew(${skewX}deg, ${skewY}deg) scale(${scale < 0 ? 0 : scale}) rotate(${rotate}deg)`;
+
           if (opacity <= 0) {
             span.style.display = 'none';
-            span.classList.remove('burning');
             charIndex++;
-            setTimeout(burnChar, 100);
+            setTimeout(burnChar, 300);
           } else {
             requestAnimationFrame(animate);
           }
@@ -257,10 +245,8 @@
     }
     burnLine();
   };
-
 })();
 </script>
 
 </body>
 </html>
-
