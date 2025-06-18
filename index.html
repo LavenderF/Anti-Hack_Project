@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>遗忘的燃烧 — 皱纸燃烧动画</title>
+<title>遗忘的燃烧 — 带火光光晕动画</title>
 <style>
   body {
     margin: 0; padding: 40px 20px 100px;
@@ -72,11 +72,49 @@
     line-height: 1.3em;
   }
   #burnContainer p span {
-    display: inline-block;
     position: relative;
+    display: inline-block;
     color: #3a2f1c;
     user-select: none;
   }
+  /* 火光光晕伪元素 */
+  #burnContainer p span.fire-glow::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 160%;
+    height: 160%;
+    pointer-events: none;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,140,0,0.6) 0%, rgba(255,140,0,0.2) 50%, transparent 80%);
+    filter: blur(6px);
+    transform: translate(-50%, -50%);
+    animation: flicker 1.2s infinite alternate;
+    z-index: -1;
+  }
+
+  /* 火光晃动动画 */
+  @keyframes flicker {
+    0% {
+      transform: translate(calc(-50% + 1px), calc(-50% - 1px)) scale(1);
+      opacity: 0.75;
+      filter: blur(6px);
+      background: radial-gradient(circle, rgba(255,140,0,0.7) 0%, rgba(255,140,0,0.25) 50%, transparent 80%);
+    }
+    50% {
+      transform: translate(calc(-50% - 2px), calc(-50% + 2px)) scale(1.05);
+      opacity: 1;
+      filter: blur(8px);
+      background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,140,0,0.3) 50%, transparent 80%);
+    }
+    100% {
+      transform: translate(calc(-50% + 1px), calc(-50% - 1px)) scale(1);
+      opacity: 0.75;
+      filter: blur(6px);
+      background: radial-gradient(circle, rgba(255,140,0,0.7) 0%, rgba(255,140,0,0.25) 50%, transparent 80%);
+    }
+  }
+
   /* 底部哲思 */
   #philosophy {
     position: fixed;
@@ -114,7 +152,6 @@
   const burnContainer = document.getElementById('burnContainer');
   const philosophy = document.getElementById('philosophy');
 
-  // 哲思语录
   const quotes = [
     "失去未必是损耗，放下也可能是成全。",
     "每一次焚烧，都是新的开始。",
@@ -138,7 +175,6 @@
   showNextQuote();
   setInterval(showNextQuote, 15000);
 
-  // 恢复未来留言（sessionStorage）
   window.onload = () => {
     const msg = sessionStorage.getItem('future');
     if (msg) {
@@ -147,7 +183,6 @@
     }
   };
 
-  // 保存未来留言（一次性）
   saveFutureBtn.onclick = () => {
     const msg = prompt("写一句话给未来的自己：");
     if (msg && msg.trim()) {
@@ -156,9 +191,8 @@
     }
   };
 
-  // 皱纸燃烧动画函数
   burnBtn.onclick = () => {
-    if (area.style.display === 'none') return; // 防止多次点
+    if (area.style.display === 'none') return;
     const text = area.value.trim();
     if (!text) return alert('请输入内容后再烧掉它。');
 
@@ -175,6 +209,7 @@
       for (const ch of line) {
         const span = document.createElement('span');
         span.textContent = ch;
+        span.classList.add('fire-glow'); // 加火光类
         p.appendChild(span);
       }
       burnContainer.appendChild(p);
@@ -219,13 +254,13 @@
 
         function animate() {
           frame++;
-          opacity -= 0.008;           // 慢慢消失，大约125帧燃尽
-          brightness -= 0.006;        // 变暗
-          saturate -= 0.005;          // 褪色
-          skewX = Math.sin(frame * 0.15) * 8;  // 纸张左右皱褶摇摆
-          skewY = Math.cos(frame * 0.1) * 5;   // 上下微波动
-          scale -= 0.0025;            // 缩小
-          rotate += 0.5;              // 缓慢旋转
+          opacity -= 0.008;
+          brightness -= 0.006;
+          saturate -= 0.005;
+          skewX = Math.sin(frame * 0.15) * 8;
+          skewY = Math.cos(frame * 0.1) * 5;
+          scale -= 0.0025;
+          rotate += 0.5;
 
           span.style.opacity = opacity < 0 ? 0 : opacity;
           span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
@@ -250,3 +285,4 @@
 
 </body>
 </html>
+
