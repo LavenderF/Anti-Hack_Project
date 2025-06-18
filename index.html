@@ -3,348 +3,282 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>随机燃烧带火焰粒子加速效果</title>
+<title>文字燃烧动画效果</title>
 <style>
   body {
-    margin: 0; padding: 40px 20px 100px;
-    background: #f9f0d9;
-    color: #3a2f1c;
-    font-family: 'Courier New', monospace;
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh;
+    background: #1a1a1a;
+    color: #f5f0e6;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
     user-select: none;
-    overflow-x: hidden;
-  }
-  h1 {
-    margin-bottom: 10px;
-    font-weight: 700;
   }
   textarea {
-    width: 90%;
-    max-width: 600px;
-    height: 180px;
-    padding: 15px;
-    font-size: 16px;
-    background: #fff8dc;
-    color: #3a2f1c;
-    border: 2px solid #c3b57a;
+    width: 100%;
+    height: 100px;
+    font-size: 24px;
+    padding: 10px;
+    margin-bottom: 12px;
     border-radius: 6px;
-    resize: none;
-    box-shadow: inset 0 0 8px #d6c67a;
-    transition: box-shadow 0.3s;
+    border: 1px solid #ccc;
+    resize: vertical;
   }
-  textarea:focus {
-    outline: none;
-    box-shadow: inset 0 0 14px #b29e50;
-  }
-  button {
-    margin: 15px 10px 0 0;
-    background: #a45c1f;
-    color: white;
-    padding: 10px 22px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.3s;
-    user-select: none;
-  }
-  button:hover:not(:disabled) {
-    background: #7d4312;
-  }
-  button:disabled {
-    background: #d2b58b;
-    cursor: default;
-  }
-  #futureMessage {
-    margin-top: 25px;
-    font-size: 16px;
-    color: #7d6f49;
-    max-width: 600px;
-    text-align: center;
+  #burnContainer {
+    font-size: 32px;
+    line-height: 1.3;
+    letter-spacing: 0.04em;
     white-space: pre-wrap;
-    min-height: 44px;
-    user-select: text;
+    word-break: break-word;
+    min-height: 100px;
   }
-  #burnContainer p {
-    margin: 12px 0;
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.3em;
-  }
-  #burnContainer p span {
-    position: relative;
+  #burnContainer span {
     display: inline-block;
-    color: #3a2f1c;
-    user-select: none;
+    transition: none;
     cursor: default;
+    position: relative;
   }
-  /* 火光光晕伪元素 */
-  #burnContainer p span.fire-glow::before {
-    content: '';
+  /* 火光光晕效果 */
+  .fire-glow::after {
+    content: "";
     position: absolute;
-    top: 50%; left: 50%;
-    width: 160%;
-    height: 160%;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
     pointer-events: none;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,140,0,0.6) 0%, rgba(255,140,0,0.2) 50%, transparent 80%);
-    filter: blur(6px);
     transform: translate(-50%, -50%);
+    border-radius: 50%;
+    box-shadow:
+      0 0 8px 2px rgba(255, 150, 50, 0.8),
+      0 0 15px 5px rgba(255, 100, 0, 0.7),
+      0 0 30px 10px rgba(255, 70, 0, 0.6);
     animation: flicker 1.2s infinite alternate;
-    z-index: -1;
   }
   @keyframes flicker {
-    0% {
-      transform: translate(calc(-50% + 1px), calc(-50% - 1px)) scale(1);
-      opacity: 0.75;
-      filter: blur(6px);
-      background: radial-gradient(circle, rgba(255,140,0,0.7) 0%, rgba(255,140,0,0.25) 50%, transparent 80%);
-    }
-    50% {
-      transform: translate(calc(-50% - 2px), calc(-50% + 2px)) scale(1.05);
-      opacity: 1;
-      filter: blur(8px);
-      background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,140,0,0.3) 50%, transparent 80%);
-    }
-    100% {
-      transform: translate(calc(-50% + 1px), calc(-50% - 1px)) scale(1);
-      opacity: 0.75;
-      filter: blur(6px);
-      background: radial-gradient(circle, rgba(255,140,0,0.7) 0%, rgba(255,140,0,0.25) 50%, transparent 80%);
-    }
+    0% { box-shadow:
+      0 0 6px 1.5px rgba(255, 180, 70, 0.9),
+      0 0 14px 4px rgba(255, 120, 20, 0.8),
+      0 0 28px 8px rgba(255, 90, 0, 0.7); }
+    100% { box-shadow:
+      0 0 12px 3px rgba(255, 200, 80, 1),
+      0 0 18px 7px rgba(255, 150, 40, 0.9),
+      0 0 38px 14px rgba(255, 120, 10, 0.8); }
   }
+
   /* 粒子样式 */
   .particle {
     position: fixed;
     pointer-events: none;
     border-radius: 50%;
-    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.7));
-    background: radial-gradient(circle, rgba(255,200,50,0.9), rgba(255,120,0,0.2));
     opacity: 1;
-    z-index: 10000;
+    mix-blend-mode: screen;
   }
-  /* 底部哲思 */
-  #philosophy {
-    position: fixed;
-    bottom: 20px;
-    width: 100%;
-    text-align: center;
-    font-size: 14px;
-    color: #7d6f49;
-    font-style: italic;
-    user-select: none;
-    pointer-events: none;
-    height: 20px;
-    line-height: 20px;
+
+  button {
+    padding: 10px 18px;
+    font-size: 18px;
+    margin-right: 10px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    background: #ff6600;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background: #ff8844;
+  }
+  #futureDiv {
+    margin-top: 20px;
+    font-size: 20px;
+    color: #ffb366;
+    min-height: 40px;
   }
 </style>
 </head>
 <body>
+<h2>文字燃烧动画（随机字母慢慢燃烧，燃烧后字母透明占位）</h2>
+<textarea id="inputArea" placeholder="请输入你想燃烧的文字...">燃烧吧，文字！🔥🔥🔥</textarea><br />
+<button id="burnBtn">开始燃烧🔥</button>
+<button id="saveFutureBtn" disabled>保存结果</button>
 
-<h1>写下你想被遗忘的事</h1>
-<textarea id="confession" placeholder="在这里写下……"></textarea>
-<div>
-  <button id="burnBtn" title="烧掉它">🔥 烧掉它</button>
-  <button id="saveFutureBtn" title="写给未来">💌 写给未来</button>
-</div>
-<div id="futureMessage"></div>
 <div id="burnContainer"></div>
-<div id="philosophy"></div>
+<div id="futureDiv"></div>
 
 <script>
-(() => {
-  const area = document.getElementById('confession');
-  const burnBtn = document.getElementById('burnBtn');
-  const saveFutureBtn = document.getElementById('saveFutureBtn');
-  const futureDiv = document.getElementById('futureMessage');
-  const burnContainer = document.getElementById('burnContainer');
-  const philosophy = document.getElementById('philosophy');
+  const area = document.getElementById("inputArea");
+  const burnBtn = document.getElementById("burnBtn");
+  const saveFutureBtn = document.getElementById("saveFutureBtn");
+  const burnContainer = document.getElementById("burnContainer");
+  const futureDiv = document.getElementById("futureDiv");
 
-  const quotes = [
-    "失去未必是损耗，放下也可能是成全。",
-    "每一次焚烧，都是新的开始。",
-    "轻轻放下，是给自己最大的慈悲。",
-    "记忆如灰烬，终会随风远去。",
-    "痛苦不会永远停留，正如火焰终将熄灭。",
-    "遗忘是一种温柔的解脱。",
-    "允许自己放下，才能看见更远的风景。",
-    "过去不再重来，未来从此展开。"
-  ];
-  let quoteIndex = 0;
+  let toBurn = [];
+  let burningIndex = 0;
+  let baseDelay = 600; // 初始燃烧间隔 ms
+  const minDelay = 100; // 最快燃烧间隔
+  const acceleration = 0.75; // 每次加速乘数（越小加速越快）
 
-  function showNextQuote(){
-    philosophy.style.opacity = 0;
-    setTimeout(() => {
-      philosophy.textContent = quotes[quoteIndex];
-      philosophy.style.opacity = 1;
-      quoteIndex = (quoteIndex +1) % quotes.length;
-    }, 800);
+  // 粒子系统
+  const particles = [];
+  const particleColors = ["#ff6600", "#ff9933", "#ffcc66", "#ff3300"];
+  const maxParticleSize = 8;
+
+  function createParticle(x, y) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.style.backgroundColor = particleColors[Math.floor(Math.random() * particleColors.length)];
+    const size = Math.random() * maxParticleSize + 3;
+    p.style.width = size + "px";
+    p.style.height = size + "px";
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+    p.vx = (Math.random() - 0.5) * 2;
+    p.vy = -Math.random() * 3 - 1;
+    p.life = 40 + Math.random() * 20;
+    p.style.opacity = 1;
+    document.body.appendChild(p);
+    particles.push(p);
   }
-  showNextQuote();
-  setInterval(showNextQuote, 15000);
 
-  window.onload = () => {
-    const msg = sessionStorage.getItem('future');
-    if (msg) {
-      futureDiv.innerText = "📬 来自过去的你写道：\n" + msg;
-      sessionStorage.removeItem('future');
+  function animateParticles() {
+    for(let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life--;
+      if (p.life <= 0) {
+        p.remove();
+        particles.splice(i,1);
+        continue;
+      }
+      p.vx *= 0.95;
+      p.vy += 0.1; // 重力感
+      let left = parseFloat(p.style.left);
+      let top = parseFloat(p.style.top);
+      left += p.vx;
+      top += p.vy;
+      p.style.left = left + "px";
+      p.style.top = top + "px";
+      p.style.opacity = p.life / 60;
     }
-  };
-
-  saveFutureBtn.onclick = () => {
-    const msg = prompt("写一句话给未来的自己：");
-    if (msg && msg.trim()) {
-      sessionStorage.setItem('future', msg.trim());
-      alert("✅ 已保存给未来的你。刷新或关闭页面后才会看到。");
+    if(particles.length > 0){
+      requestAnimationFrame(animateParticles);
     }
-  };
+  }
 
-  burnBtn.onclick = () => {
-    if (area.style.display === 'none') return;
-    const text = area.value.trim();
-    if (!text) return alert('请输入内容后再烧掉它。');
-
+  function startBurn() {
     burnBtn.disabled = true;
     saveFutureBtn.disabled = true;
-    area.disabled = true;
+    futureDiv.innerText = "";
+    burnContainer.innerHTML = "";
 
-    const lines = text.split('\n');
-    area.style.display = 'none';
-    burnContainer.innerHTML = '';
-
-    // 建立所有字符span，带火光光晕
-    const allSpans = [];
-    lines.forEach(line => {
-      const p = document.createElement('p');
-      for (const ch of line) {
-        const span = document.createElement('span');
-        span.textContent = ch;
-        span.classList.add('fire-glow');
-        p.appendChild(span);
-        allSpans.push(span);
-      }
-      burnContainer.appendChild(p);
-    });
-
-    // 粒子管理
-    const particles = [];
-    function createParticle(x,y){
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      const size = Math.random() * 8 + 4;
-      particle.style.width = size + 'px';
-      particle.style.height = size + 'px';
-      particle.style.left = x + 'px';
-      particle.style.top = y + 'px';
-      document.body.appendChild(particle);
-      particles.push({
-        el: particle,
-        x, y,
-        vx: (Math.random()-0.5) * 1.5,
-        vy: -(Math.random()*1.5 + 1.5),
-        alpha: 1,
-        size,
-      });
-    }
-    function animateParticles(){
-      for(let i=particles.length-1; i>=0; i--){
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy -= 0.02; // 重力方向向上，火苗上升
-        p.alpha -= 0.02;
-        if(p.alpha <= 0){
-          p.el.remove();
-          particles.splice(i,1);
-          continue;
-        }
-        p.el.style.left = p.x + 'px';
-        p.el.style.top = p.y + 'px';
-        p.el.style.opacity = p.alpha;
-        const scale = p.alpha;
-        p.el.style.transform = `scale(${scale})`;
-      }
-      if(particles.length > 0) requestAnimationFrame(animateParticles);
+    const text = area.value;
+    if(!text.trim()){
+      alert("请输入一些文字");
+      burnBtn.disabled = false;
+      return;
     }
 
-    // 燃烧动画，随机顺序
-    const toBurn = allSpans.slice();
+    // 将文字拆成span，方便单独控制
+    toBurn = [];
+    for(let ch of text){
+      const span = document.createElement("span");
+      span.innerText = ch;
+      span.classList.add("fire-glow");
+      burnContainer.appendChild(span);
+      toBurn.push(span);
+    }
+    burningIndex = 0;
+    baseDelay = 600;
+
+    // 随机打乱燃烧顺序索引
     shuffleArray(toBurn);
 
-    function shuffleArray(arr){
-      for(let i=arr.length-1; i>0; i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-    }
-
-    let burningIndex = 0;
-    let baseDelay = 400; // 初始燃烧间隔（毫秒）
-    let minDelay = 50;  // 最短燃烧间隔
-    let acceleration = 0.95; // 每次燃烧后乘的加速系数（越小越快）
-
-    function burnNext(){
-      if(burningIndex >= toBurn.length){
-        setTimeout(() => {
-          burnContainer.innerHTML = '';
-          futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
-          burnBtn.disabled = false;
-          saveFutureBtn.disabled = false;
-          area.value = '';
-          area.style.display = 'block';
-          area.disabled = false;
-        }, 1500);
-        return;
-      }
-      const span = toBurn[burningIndex];
-      burningIndex++;
-
-      const rect = span.getBoundingClientRect();
-      for(let i=0; i<4; i++){
-        createParticle(rect.left + rect.width/2, rect.top + rect.height/2);
-      }
-      if(particles.length > 0) animateParticles();
-
-      let opacity = 1;
-      let brightness = 1;
-      let saturate = 1;
-      let skewX = 0;
-      let skewY = 0;
-      let scale = 1;
-      let rotate = 0;
-      let frame = 0;
-
-      function animate(){
-        frame++;
-        opacity -= 0.03;
-        brightness -= 0.02;
-        saturate -= 0.015;
-        skewX = Math.sin(frame * 0.3) * 10;
-        skewY = Math.cos(frame * 0.2) * 6;
-        scale -= 0.01;
-        rotate += 1;
-
-        span.style.opacity = opacity < 0 ? 0 : opacity;
-        span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
-        span.style.transform = `skew(${skewX}deg, ${skewY}deg) scale(${scale < 0 ? 0 : scale}) rotate(${rotate}deg)`;
-
-        if(opacity <= 0){
-          span.style.display = 'none';
-          baseDelay = Math.max(minDelay, baseDelay * acceleration);
-          setTimeout(burnNext, baseDelay);
-        } else {
-          requestAnimationFrame(animate);
-        }
-      }
-      animate();
-    }
+    // 让textarea隐藏，避免重复输入
+    area.style.display = "none";
 
     burnNext();
-  };
-})();
-</script>
+  }
 
+  function burnNext(){
+    if(burningIndex >= toBurn.length){
+      setTimeout(() => {
+        burnContainer.innerHTML = '';
+        futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
+        burnBtn.disabled = false;
+        saveFutureBtn.disabled = false;
+        area.value = '';
+        area.style.display = 'block';
+        area.disabled = false;
+      }, 1500);
+      return;
+    }
+    const span = toBurn[burningIndex];
+    burningIndex++;
+
+    const rect = span.getBoundingClientRect();
+    for(let i=0; i<4; i++){
+      createParticle(rect.left + rect.width/2, rect.top + rect.height/2);
+    }
+    if(particles.length > 0) animateParticles();
+
+    let opacity = 1;
+    let brightness = 1;
+    let saturate = 1;
+    let skewX = 0;
+    let skewY = 0;
+    let scale = 1;
+    let rotate = 0;
+    let frame = 0;
+
+    function animate(){
+      frame++;
+      opacity -= 0.03;
+      brightness -= 0.02;
+      saturate -= 0.015;
+      skewX = Math.sin(frame * 0.3) * 10;
+      skewY = Math.cos(frame * 0.2) * 6;
+      scale -= 0.01;
+      rotate += 1;
+
+      span.style.opacity = opacity < 0 ? 0 : opacity;
+      span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
+      span.style.transform = `skew(${skewX}deg, ${skewY}deg) scale(${scale < 0 ? 0 : scale}) rotate(${rotate}deg)`;
+
+      if(opacity <= 0){
+        // 保留位置，只透明不可见
+        span.style.visibility = 'hidden'; 
+        span.classList.remove('fire-glow');
+        span.style.opacity = 0;
+        span.style.pointerEvents = 'none';
+
+        baseDelay = Math.max(minDelay, baseDelay * acceleration);
+        setTimeout(burnNext, baseDelay);
+      } else {
+        requestAnimationFrame(animate);
+      }
+    }
+    animate();
+  }
+
+  // Fisher-Yates 洗牌算法随机打乱数组
+  function shuffleArray(array){
+    for(let i=array.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  burnBtn.onclick = startBurn;
+  saveFutureBtn.onclick = () => {
+    const text = burnContainer.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("燃烧后的文字已复制到剪贴板！");
+    }).catch(() => {
+      alert("复制失败，请手动复制！");
+    });
+  };
+</script>
 </body>
 </html>
-
