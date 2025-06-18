@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>遗忘的燃烧 — 带火光光晕动画</title>
+<title>随机燃烧带火焰粒子效果</title>
 <style>
   body {
     margin: 0; padding: 40px 20px 100px;
-    background: #f9f0d9; /* 旧纸色 */
+    background: #f9f0d9;
     color: #3a2f1c;
     font-family: 'Courier New', monospace;
     display: flex; flex-direction: column; align-items: center;
     min-height: 100vh;
     user-select: none;
+    overflow-x: hidden;
   }
   h1 {
     margin-bottom: 10px;
@@ -76,6 +77,7 @@
     display: inline-block;
     color: #3a2f1c;
     user-select: none;
+    cursor: default;
   }
   /* 火光光晕伪元素 */
   #burnContainer p span.fire-glow::before {
@@ -92,8 +94,6 @@
     animation: flicker 1.2s infinite alternate;
     z-index: -1;
   }
-
-  /* 火光晃动动画 */
   @keyframes flicker {
     0% {
       transform: translate(calc(-50% + 1px), calc(-50% - 1px)) scale(1);
@@ -114,7 +114,16 @@
       background: radial-gradient(circle, rgba(255,140,0,0.7) 0%, rgba(255,140,0,0.25) 50%, transparent 80%);
     }
   }
-
+  /* 粒子样式 */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.7));
+    background: radial-gradient(circle, rgba(255,200,50,0.9), rgba(255,120,0,0.2));
+    opacity: 1;
+    z-index: 10000;
+  }
   /* 底部哲思 */
   #philosophy {
     position: fixed;
@@ -204,22 +213,75 @@
     area.style.display = 'none';
     burnContainer.innerHTML = '';
 
+    // 建立所有字符span，带火光光晕
+    const allSpans = [];
     lines.forEach(line => {
       const p = document.createElement('p');
       for (const ch of line) {
         const span = document.createElement('span');
         span.textContent = ch;
-        span.classList.add('fire-glow'); // 加火光类
+        span.classList.add('fire-glow');
         p.appendChild(span);
+        allSpans.push(span);
       }
       burnContainer.appendChild(p);
     });
 
-    const paragraphs = burnContainer.querySelectorAll('p');
-    let lineIndex = 0;
+    // 粒子管理
+    const particles = [];
+    function createParticle(x,y){
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      const size = Math.random() * 8 + 4;
+      particle.style.width = size + 'px';
+      particle.style.height = size + 'px';
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      document.body.appendChild(particle);
+      particles.push({
+        el: particle,
+        x, y,
+        vx: (Math.random()-0.5) * 1.5,
+        vy: -(Math.random()*1.5 + 1.5),
+        alpha: 1,
+        size,
+      });
+    }
+    function animateParticles(){
+      for(let i=particles.length-1; i>=0; i--){
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy -= 0.02; // 重力方向向上，火苗上升
+        p.alpha -= 0.02;
+        if(p.alpha <= 0){
+          p.el.remove();
+          particles.splice(i,1);
+          continue;
+        }
+        p.el.style.left = p.x + 'px';
+        p.el.style.top = p.y + 'px';
+        p.el.style.opacity = p.alpha;
+        const scale = p.alpha;
+        p.el.style.transform = `scale(${scale})`;
+      }
+      if(particles.length > 0) requestAnimationFrame(animateParticles);
+    }
 
-    function burnLine() {
-      if (lineIndex >= paragraphs.length) {
+    // 燃烧动画，随机顺序
+    const toBurn = allSpans.slice();
+    shuffleArray(toBurn);
+
+    function shuffleArray(arr){
+      for(let i=arr.length-1; i>0; i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    let burningIndex = 0;
+    function burnNext(){
+      if(burningIndex >= toBurn.length){
         setTimeout(() => {
           burnContainer.innerHTML = '';
           futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
@@ -231,58 +293,55 @@
         }, 1500);
         return;
       }
-      const spans = paragraphs[lineIndex].querySelectorAll('span');
-      let charIndex = 0;
+      const span = toBurn[burningIndex];
+      burningIndex++;
 
-      function burnChar() {
-        if (charIndex >= spans.length) {
-          lineIndex++;
-          setTimeout(burnLine, 1000);
-          return;
-        }
-        const span = spans[charIndex];
-        span.style.transition = 'none';
-
-        let opacity = 1;
-        let brightness = 1;
-        let saturate = 1;
-        let skewX = 0;
-        let skewY = 0;
-        let scale = 1;
-        let rotate = 0;
-        let frame = 0;
-
-        function animate() {
-          frame++;
-          opacity -= 0.008;
-          brightness -= 0.006;
-          saturate -= 0.005;
-          skewX = Math.sin(frame * 0.15) * 8;
-          skewY = Math.cos(frame * 0.1) * 5;
-          scale -= 0.0025;
-          rotate += 0.5;
-
-          span.style.opacity = opacity < 0 ? 0 : opacity;
-          span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
-          span.style.transform = `skew(${skewX}deg, ${skewY}deg) scale(${scale < 0 ? 0 : scale}) rotate(${rotate}deg)`;
-
-          if (opacity <= 0) {
-            span.style.display = 'none';
-            charIndex++;
-            setTimeout(burnChar, 300);
-          } else {
-            requestAnimationFrame(animate);
-          }
-        }
-        animate();
+      // 计算span在页面上的位置
+      const rect = span.getBoundingClientRect();
+      // 生成几个火焰粒子
+      for(let i=0; i<4; i++){
+        createParticle(rect.left + rect.width/2, rect.top + rect.height/2);
       }
-      burnChar();
+      if(particles.length > 0) animateParticles();
+
+      // 字符燃烧动画
+      let opacity = 1;
+      let brightness = 1;
+      let saturate = 1;
+      let skewX = 0;
+      let skewY = 0;
+      let scale = 1;
+      let rotate = 0;
+      let frame = 0;
+
+      function animate(){
+        frame++;
+        opacity -= 0.03;
+        brightness -= 0.02;
+        saturate -= 0.015;
+        skewX = Math.sin(frame * 0.3) * 10;
+        skewY = Math.cos(frame * 0.2) * 6;
+        scale -= 0.01;
+        rotate += 1;
+
+        span.style.opacity = opacity < 0 ? 0 : opacity;
+        span.style.filter = `brightness(${brightness < 0 ? 0 : brightness}) saturate(${saturate < 0 ? 0 : saturate}) blur(${(1 - opacity)*3}px)`;
+        span.style.transform = `skew(${skewX}deg, ${skewY}deg) scale(${scale < 0 ? 0 : scale}) rotate(${rotate}deg)`;
+
+        if(opacity <= 0){
+          span.style.display = 'none';
+          setTimeout(burnNext, 150 + Math.random()*200);
+        } else {
+          requestAnimationFrame(animate);
+        }
+      }
+      animate();
     }
-    burnLine();
+
+    burnNext();
   };
 })();
 </script>
 
 </body>
 </html>
-
