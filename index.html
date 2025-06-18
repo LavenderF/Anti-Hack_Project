@@ -31,14 +31,15 @@
       padding: 16px;
       border-radius: 12px;
       border: none;
-      background: #fffaf3 url('https://www.transparenttextures.com/patterns/crissxcross.png');
+      background: #fffaf3; /* 移除了背景图案 */
       font-size: 18px;
       color: #333;
       resize: vertical;
       box-shadow: 0 0 15px rgba(255, 100, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4);
       animation: flicker 1.5s infinite alternate;
-      border-left: 4px solid rgba(255, 80, 0, 0.5);
-      border-right: 4px solid rgba(255, 80, 0, 0.5);
+      border-left: 2px solid rgba(255, 80, 0, 0.3); /* 减淡左边框 */
+      border-right: 2px solid rgba(255, 80, 0, 0.3); /* 减淡右边框 */
+      margin: 0 20px; /* 添加左右边距防止遮挡 */
     }
 
     @keyframes flicker {
