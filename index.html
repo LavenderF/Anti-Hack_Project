@@ -1,341 +1,223 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>皱巴纸文字慢慢烧穿洞效果</title>
-<style>
-  /* 皱巴纸纹理背景，利用SVG滤镜噪点叠加 */
-  body {
-    margin:0; padding:30px;
-    background: #f9f5eb;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    user-select:none;
-    min-height: 100vh;
-    overflow-x: hidden;
-    color: #333;
-  }
-  /* 纸张皱纹纹理背景层 */
-  #paper {
-    position: fixed;
-    top:0; left:0; right:0; bottom:0;
-    pointer-events:none;
-    background: repeating-radial-gradient(
-      circle at center,
-      #f9f5eb 0, #e8e1cd 1px, #f9f5eb 2px
-    );
-    filter: url(#noise);
-    z-index: -1;
-  }
-  textarea {
-    width: 100%;
-    height: 120px;
-    font-size: 28px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    resize: vertical;
-    margin-bottom: 15px;
-  }
-  #burnContainer {
-    font-size: 36px;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-break: break-word;
-    min-height: 140px;
-    letter-spacing: 0.04em;
-    user-select: none;
-  }
-  #burnContainer span {
-    display: inline-block;
-    position: relative;
-    cursor: default;
-    /* 遮罩起始无洞，后面用JS控制mask */
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-  button {
-    padding: 12px 22px;
-    font-size: 18px;
-    margin-right: 10px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    background: #d35400;
-    color: white;
-    transition: background-color 0.3s ease;
-  }
-  button:disabled {
-    background: #aaa;
-    cursor: not-allowed;
-  }
-  button:hover:not(:disabled) {
-    background: #e67e22;
-  }
-  #futureDiv {
-    margin-top: 25px;
-    font-size: 22px;
-    color: #7f4e12;
-    min-height: 50px;
-  }
-  /* 粒子样式 */
-  .particle {
-    position: fixed;
-    pointer-events: none;
-    border-radius: 50%;
-    opacity: 1;
-    mix-blend-mode: screen;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>皱巴纸燃烧文字</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f9f5eb;
+      font-family: "Segoe UI", sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-radial-gradient(circle at center, #f9f5eb 0, #e8e1cd 1px, #f9f5eb 2px);
+      filter: url(#noise);
+      z-index: -1;
+    }
+
+    .centered {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 40px;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    textarea {
+      width: 90%;
+      max-width: 600px;
+      height: 120px;
+      font-size: 24px;
+      padding: 10px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      resize: vertical;
+      background: #fffefb;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #burnContainer {
+      text-align: center;
+      margin: 30px auto;
+      font-size: 36px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 120px;
+    }
+
+    #burnContainer span {
+      display: inline-block;
+      position: relative;
+    }
+
+    button {
+      margin: 10px 6px;
+      padding: 10px 18px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #d35400;
+      color: #fff;
+    }
+
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+
+    #futureDiv {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 22px;
+      color: #7f4e12;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.03); }
+    }
+
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      border-radius: 50%;
+      mix-blend-mode: screen;
+      z-index: 10;
+    }
+  </style>
 </head>
 <body>
 
-<div id="paper"></div>
-
-<h2>皱巴纸上文字慢慢烧穿洞动画效果</h2>
-<textarea id="inputArea" placeholder="请输入你想燃烧的文字...">这是一张皱巴的纸，文字慢慢被烧穿...</textarea><br />
-<button id="burnBtn">开始燃烧🔥</button>
-<button id="saveFutureBtn" disabled>保存结果</button>
+<div class="centered">
+  <h2>皱巴纸文字慢慢烧穿洞</h2>
+  <textarea id="inputArea" placeholder="请输入你想燃烧的文字...">这是一张皱巴的纸，文字慢慢被烧穿...</textarea>
+  <div>
+    <button id="burnBtn">开始燃烧🔥</button>
+    <button id="saveFutureBtn" disabled>保存结果</button>
+  </div>
+</div>
 
 <div id="burnContainer"></div>
-<div id="futureDiv"></div>
+<div id="futureDiv">🕊️ 它正在慢慢消失……</div>
 
 <svg width="0" height="0">
   <filter id="noise" x="0" y="0" width="100%" height="100%">
-    <feTurbulence id="turbulence" baseFrequency="0.07" numOctaves="3" stitchTiles="stitch" />
-    <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="10" xChannelSelector="R" yChannelSelector="G" />
+    <feTurbulence baseFrequency="0.07" numOctaves="3" stitchTiles="stitch" />
+    <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="10" />
   </filter>
 </svg>
 
 <script>
   const area = document.getElementById("inputArea");
   const burnBtn = document.getElementById("burnBtn");
-  const saveFutureBtn = document.getElementById("saveFutureBtn");
-  const burnContainer = document.getElementById("burnContainer");
+  const saveBtn = document.getElementById("saveFutureBtn");
+  const container = document.getElementById("burnContainer");
   const futureDiv = document.getElementById("futureDiv");
-  const paper = document.getElementById("paper");
 
-  let toBurn = [];
-  let burningIndex = 0;
-  let baseDelay = 600; // 初始燃烧间隔 ms
-  const minDelay = 100; // 最快燃烧间隔
-  const acceleration = 0.75; // 每次加速乘数（越小加速越快）
-
-  const particles = [];
   const particleColors = ["#e25822", "#f39c12", "#d35400", "#ff6f00"];
-  const maxParticleSize = 7;
-
-  // 用于给每个span设置一个遮罩id和SVG遮罩圆，用来实现洞逐渐变大效果
-  let maskDefs = null;
+  const particles = [];
 
   function createParticle(x, y) {
     const p = document.createElement("div");
     p.className = "particle";
-    p.style.backgroundColor = particleColors[Math.floor(Math.random() * particleColors.length)];
-    const size = Math.random() * maxParticleSize + 3;
+    const size = Math.random() * 6 + 4;
     p.style.width = size + "px";
     p.style.height = size + "px";
     p.style.left = x + "px";
     p.style.top = y + "px";
+    p.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
     p.vx = (Math.random() - 0.5) * 2;
     p.vy = -Math.random() * 3 - 1;
-    p.life = 40 + Math.random() * 20;
+    p.life = 40 + Math.random() * 30;
     p.style.opacity = 1;
     document.body.appendChild(p);
     particles.push(p);
   }
 
   function animateParticles() {
-    for(let i = particles.length - 1; i >= 0; i--) {
+    for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life--;
       if (p.life <= 0) {
         p.remove();
-        particles.splice(i,1);
+        particles.splice(i, 1);
         continue;
       }
-      p.vx *= 0.95;
+      p.vx *= 0.98;
       p.vy += 0.1;
-      let left = parseFloat(p.style.left);
-      let top = parseFloat(p.style.top);
-      left += p.vx;
-      top += p.vy;
-      p.style.left = left + "px";
-      p.style.top = top + "px";
+      p.style.left = parseFloat(p.style.left) + p.vx + "px";
+      p.style.top = parseFloat(p.style.top) + p.vy + "px";
       p.style.opacity = p.life / 60;
     }
-    if(particles.length > 0){
+    if (particles.length > 0) {
       requestAnimationFrame(animateParticles);
     }
   }
 
-  // 生成SVG遮罩定义节点
-  function setupMasks(){
-    let svgNS = "http://www.w3.org/2000/svg";
-    let svg = document.createElementNS(svgNS,"svg");
-    svg.style.position = "absolute";
-    svg.style.width = 0; svg.style.height = 0;
-    svg.style.overflow = "visible";
-    svg.setAttribute("aria-hidden","true");
-
-    maskDefs = document.createElementNS(svgNS,"defs");
-    svg.appendChild(maskDefs);
-    document.body.appendChild(svg);
-  }
-
-  function createMask(id, cx, cy, r){
-    let svgNS = "http://www.w3.org/2000/svg";
-    let mask = document.createElementNS(svgNS,"mask");
-    mask.setAttribute("id", id);
-
-    let rect = document.createElementNS(svgNS,"rect");
-    rect.setAttribute("x",0);
-    rect.setAttribute("y",0);
-    rect.setAttribute("width","100%");
-    rect.setAttribute("height","100%");
-    rect.setAttribute("fill","white");
-    mask.appendChild(rect);
-
-    let circle = document.createElementNS(svgNS,"circle");
-    circle.setAttribute("cx", cx);
-    circle.setAttribute("cy", cy);
-    circle.setAttribute("r", r);
-    circle.setAttribute("fill", "black"); // 黑色区域会被遮挡
-    circle.style.transition = "r 0.3s linear";
-    mask.appendChild(circle);
-
-    maskDefs.appendChild(mask);
-    return {mask, circle};
-  }
-
-  // 洗牌算法
-  function shuffleArray(array){
-    for(let i=array.length-1; i>0; i--){
-      const j = Math.floor(Math.random()*(i+1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
-
-  burnBtn.onclick = () => {
+  function burnText() {
     burnBtn.disabled = true;
-    saveFutureBtn.disabled = true;
-    futureDiv.innerText = "";
-    burnContainer.innerHTML = "";
+    saveBtn.disabled = true;
+    container.innerHTML = "";
+    futureDiv.innerText = "🕊️ 它正在慢慢消失……";
 
     const text = area.value;
-    if(!text.trim()){
-      alert("请输入一些文字");
-      burnBtn.disabled = false;
-      return;
-    }
-    toBurn = [];
+    if (!text.trim()) return;
 
-    // 清除旧的svg defs
-    if(maskDefs){
-      while(maskDefs.firstChild) maskDefs.removeChild(maskDefs.firstChild);
-    }else{
-      setupMasks();
-    }
-
-    for(let ch of text){
+    const spans = text.split("").map((char) => {
       const span = document.createElement("span");
-      span.innerText = ch;
-      span.style.webkitMaskImage = "none";
-      span.style.maskImage = "none";
-      burnContainer.appendChild(span);
-      toBurn.push({span});
-    }
-
-    // 给每个span创建对应的mask
-    toBurn.forEach((item, idx) => {
-      // 获取span相对于页面位置中心点
-      let rect = item.span.getBoundingClientRect();
-      // 使用百分比坐标mask不准，改成固定像素
-      // 创建一个唯一ID
-      let id = "mask-burn-" + idx + "-" + Date.now();
-      let cx = rect.width / 2;
-      let cy = rect.height / 2;
-      let maskObj = createMask(id, cx, cy, 0);
-      item.mask = maskObj.mask;
-      item.circle = maskObj.circle;
-      item.cx = cx;
-      item.cy = cy;
-      item.r = 0;
-      item.span.style.webkitMaskImage = `url(#${id})`;
-      item.span.style.maskImage = `url(#${id})`;
-      // mask坐标会相对于span本身，circle cx/cy用span内坐标中心
-      item.span.style.webkitMaskRepeat = "no-repeat";
-      item.span.style.maskRepeat = "no-repeat";
-      item.span.style.webkitMaskPosition = "center";
-      item.span.style.maskPosition = "center";
-      item.span.style.webkitMaskSize = "100% 100%";
-      item.span.style.maskSize = "100% 100%";
+      span.innerText = char;
+      container.appendChild(span);
+      return span;
     });
 
-    burningIndex = 0;
-    baseDelay = 600;
-    shuffleArray(toBurn);
+    let i = 0;
+    let delay = 500;
 
-    area.style.display = "none";
+    function burnNext() {
+      if (i >= spans.length) {
+        futureDiv.innerText = "🕊️ 它已经不在这里了。你做得很好。";
+        burnBtn.disabled = false;
+        saveBtn.disabled = false;
+        return;
+      }
+      const span = spans[i++];
+      const rect = span.getBoundingClientRect();
+      for (let j = 0; j < 4; j++) {
+        createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
+      animateParticles();
+
+      span.style.transition = "opacity 0.7s, filter 0.7s";
+      span.style.opacity = "0";
+      span.style.filter = "blur(2px)";
+      setTimeout(burnNext, delay);
+      delay = Math.max(100, delay * 0.85); // 加速燃烧
+    }
 
     burnNext();
-  };
-
-  function burnNext(){
-    if(burningIndex >= toBurn.length){
-      setTimeout(() => {
-        burnContainer.innerHTML = '';
-        futureDiv.innerText = "🕊️ 文字已慢慢被烧穿消失。你做得很好。";
-        burnBtn.disabled = false;
-        saveFutureBtn.disabled = false;
-        area.value = '';
-        area.style.display = 'block';
-        area.disabled = false;
-      }, 1500);
-      return;
-    }
-    const item = toBurn[burningIndex];
-    burningIndex++;
-
-    let rect = item.span.getBoundingClientRect();
-    for(let i=0; i<5; i++){
-      createParticle(rect.left + rect.width/2, rect.top + rect.height/2);
-    }
-    if(particles.length > 0) animateParticles();
-
-    let radius = 0;
-    const maxRadius = Math.max(rect.width, rect.height) * 0.9;
-    const step = maxRadius / 30;
-    function animate(){
-      radius += step;
-      if(radius >= maxRadius){
-        radius = maxRadius;
-      }
-      item.circle.setAttribute("r", radius);
-      if(radius >= maxRadius){
-        // 变为透明但占位，移除遮罩（即字消失但占位）
-        item.span.style.visibility = 'hidden';
-        item.span.style.opacity = 0;
-        item.span.style.pointerEvents = 'none';
-        // 移除mask遮罩，让字母彻底看不见（因为mask是黑洞）
-        item.span.style.webkitMaskImage = "none";
-        item.span.style.maskImage = "none";
-
-        baseDelay = Math.max(minDelay, baseDelay * acceleration);
-        setTimeout(burnNext, baseDelay);
-      } else {
-        requestAnimationFrame(animate);
-      }
-    }
-    animate();
   }
 
-  saveFutureBtn.onclick = () => {
-    const text = burnContainer.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-      alert("燃烧后的文字已复制到剪贴板！");
-    }).catch(() => {
-      alert("复制失败，请手动复制！");
+  burnBtn.onclick = burnText;
+
+  saveBtn.onclick = () => {
+    navigator.clipboard.writeText(container.innerText).then(() => {
+      alert("复制成功！");
     });
   };
 </script>
